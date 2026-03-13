@@ -149,6 +149,7 @@ Use this endpoint when you already have a LinkedIn job URL or job id and need ri
 
 - external apply URL
 - Easy Apply detection
+- application-open / application-closed detection
 - authenticated page metadata
 - the rendered job description from `linkedin.com/jobs/view/...`
 
@@ -217,8 +218,16 @@ LinkedInJobDetail
 ├── apply_direct_url
 ├── easy_apply
 ├── apply_button_text
-└── apply_method
+├── apply_method
+├── accepting_applications
+└── application_status
 ```
+
+If LinkedIn shows a closed state such as `No longer accepting applications`, the detail scraper returns:
+
+- `accepting_applications=False`
+- `application_status="no_longer_accepting_applications"`
+- no apply link unless LinkedIn still renders one
 
 ## Supported Countries for Job Searching
 

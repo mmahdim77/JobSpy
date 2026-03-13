@@ -304,6 +304,8 @@ class LinkedInJobDetail(BaseModel):
     easy_apply: bool = False
     apply_button_text: str | None = None
     apply_method: str | None = None
+    accepting_applications: bool | None = None
+    application_status: str | None = None
 
 
 class Site(Enum):

@@ -325,6 +325,35 @@ def _extract_easy_apply(page) -> dict[str, Any]:
     }
 
 
+def _extract_application_status(page) -> dict[str, Any]:
+    lines = _header_lines(page)
+    header_text = " ".join(lines)
+    normalized = header_text.lower()
+
+    if "no longer accepting applications" in normalized:
+        return {
+            "accepting_applications": False,
+            "application_status": "no_longer_accepting_applications",
+        }
+
+    if "applications closed" in normalized:
+        return {
+            "accepting_applications": False,
+            "application_status": "applications_closed",
+        }
+
+    if "apply" in normalized or "easy apply" in normalized:
+        return {
+            "accepting_applications": True,
+            "application_status": "accepting_applications",
+        }
+
+    return {
+        "accepting_applications": None,
+        "application_status": None,
+    }
+
+
 def scrape_linkedin_job(
     job_id_or_url: str,
     *,
@@ -451,6 +480,7 @@ def scrape_linkedin_job(
             fallback = _fallback_extract_from_main(page)
             apply_links = _extract_apply_links(page)
             easy_apply_info = _extract_easy_apply(page)
+            application_status = _extract_application_status(page)
 
             title = title or fallback["title"]
             company_name = company_name or fallback["company_name"]
@@ -489,6 +519,8 @@ def scrape_linkedin_job(
                 easy_apply=easy_apply_info["easy_apply"],
                 apply_button_text=easy_apply_info["apply_button_text"],
                 apply_method=apply_method,
+                accepting_applications=application_status["accepting_applications"],
+                application_status=application_status["application_status"],
             )
         finally:
             context.close()
