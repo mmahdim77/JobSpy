@@ -88,7 +88,10 @@ def _non_empty_lines(text: str | None) -> list[str]:
 
 
 def _header_lines(page) -> list[str]:
-    main_text = _locator_text(page.locator("main").first)
+    try:
+        main_text = page.locator("main").first.inner_text()
+    except Exception:
+        main_text = _locator_text(page.locator("main").first)
     lines = _non_empty_lines(main_text)
     if "About the job" in lines:
         return lines[: lines.index("About the job")]
@@ -284,9 +287,24 @@ def _extract_apply_links(page) -> dict[str, str | None]:
     }
 
 
-def _extract_easy_apply(page) -> dict[str, Any]:
+def _extract_easy_apply(page, apply_linkedin_url: str | None) -> dict[str, Any]:
     easy_apply_present = False
     apply_button_text = None
+
+    if apply_linkedin_url:
+        if "/jobs/view/" in apply_linkedin_url and "/apply/" in apply_linkedin_url:
+            return {
+                "easy_apply": True,
+                "apply_button_text": "Easy Apply",
+                "apply_method": "easy_apply",
+            }
+        if "/redir/redirect/" in apply_linkedin_url:
+            return {
+                "easy_apply": False,
+                "apply_button_text": "Apply",
+                "apply_method": None,
+            }
+
     top_lines = _header_lines(page)
     header_text = " ".join(top_lines)
     normalized = header_text.lower()
@@ -455,7 +473,9 @@ def scrape_linkedin_job(
 
             fallback = _fallback_extract_from_main(page)
             apply_links = _extract_apply_links(page)
-            easy_apply_info = _extract_easy_apply(page)
+            easy_apply_info = _extract_easy_apply(
+                page, apply_links["apply_linkedin_url"]
+            )
             application_status = _extract_application_status(page)
 
             title = title or fallback["title"]
