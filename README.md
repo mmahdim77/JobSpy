@@ -1,12 +1,16 @@
 <img src="https://github.com/cullenwatson/JobSpy/assets/78247585/ae185b7e-e444-4712-8bb9-fa97f53e896b" width="400">
 
-**JobSpy** is a job scraping library with the goal of aggregating all the jobs from popular job boards with one tool.
+**JobSpy** is a Python job scraping library with two public entry points:
+
+- `scrape_jobs(...)` for multi-platform search across LinkedIn, Indeed, Glassdoor, Google, ZipRecruiter, and others
+- `scrape_linkedin_job(...)` for scraping a single authenticated LinkedIn `jobs/view/<id>` page with apply-link and Easy Apply detection
 
 ## Features
 
 - Scrapes job postings from **LinkedIn**, **Indeed**, **Glassdoor**, **Google**, **ZipRecruiter**, & other job boards concurrently
 - Aggregates the job postings in a dataframe
 - Proxies support to bypass blocking
+- Authenticated LinkedIn job detail scraping for individual job pages
 
 ![jobspy](https://github.com/cullenwatson/JobSpy/assets/78247585/ec7ef355-05f6-4fd3-8161-a817e31c5c57)
 
@@ -18,7 +22,13 @@ pip install -U python-jobspy
 
 _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_
 
-### Usage
+For authenticated LinkedIn job page scraping, install a Playwright browser once:
+
+```bash
+playwright install chromium
+```
+
+## API 1: Search Jobs
 
 ```python
 import csv
@@ -41,7 +51,7 @@ print(jobs.head())
 jobs.to_csv("jobs.csv", quoting=csv.QUOTE_NONNUMERIC, escapechar="\\", index=False) # to_excel
 ```
 
-### Output
+### Search Output
 
 ```
 SITE           TITLE                             COMPANY           CITY          STATE  JOB_TYPE  INTERVAL  MIN_AMOUNT  MAX_AMOUNT  JOB_URL                                            DESCRIPTION
@@ -133,6 +143,83 @@ Optional
 |    - easy_apply
 ```
 
+## API 2: Scrape a Single LinkedIn Job Page
+
+Use this endpoint when you already have a LinkedIn job URL or job id and need richer page-level details such as:
+
+- external apply URL
+- Easy Apply detection
+- authenticated page metadata
+- the rendered job description from `linkedin.com/jobs/view/...`
+
+```python
+from jobspy import scrape_linkedin_job
+
+job = scrape_linkedin_job(
+    "https://www.linkedin.com/jobs/view/4383846839",
+    profile_dir=".linkedin-playwright-profile",
+)
+
+print(job.model_dump())
+```
+
+You can also pass a LinkedIn-style id such as `li-4383846839`.
+
+### LinkedIn Authentication Requirement
+
+`scrape_linkedin_job(...)` uses an authenticated Playwright browser profile. Create that profile once by logging into LinkedIn with Chromium, then reuse that profile path for future scrapes.
+
+Typical workflow:
+
+1. Create a persistent Chromium profile directory.
+2. Log into LinkedIn in that browser profile manually.
+3. Pass the same `profile_dir` to `scrape_linkedin_job(...)`.
+
+### `scrape_linkedin_job()` Parameters
+
+```plaintext
+Required
+├── job_id_or_url (str)
+|    LinkedIn jobs/view URL or a job id such as li-4383846839
+
+Optional
+├── profile_dir (str | Path)
+|    path to a logged-in Playwright profile directory
+|
+├── browser_channel (str | None)
+|    optional browser channel such as "chrome"
+|
+└── headless (bool)
+     run the browser headlessly (default True)
+```
+
+### `scrape_linkedin_job()` Output
+
+`scrape_linkedin_job(...)` returns a `LinkedInJobDetail` model with:
+
+```plaintext
+LinkedInJobDetail
+├── job_id
+├── job_url
+├── title
+├── company_name
+├── company_url
+├── location
+├── posted_time
+├── applicants
+├── description_text
+├── description_html
+├── criteria
+├── skills
+├── benefits
+├── metadata_text
+├── apply_linkedin_url
+├── apply_direct_url
+├── easy_apply
+├── apply_button_text
+└── apply_method
+```
+
 ## Supported Countries for Job Searching
 
 ### **LinkedIn**
@@ -179,6 +266,7 @@ Bayt only uses the search_term parameter currently and searches internationally
 * Indeed is the best scraper currently with no rate limiting.  
 * All the job board endpoints are capped at around 1000 jobs on a given search.  
 * LinkedIn is the most restrictive and usually rate limits around the 10th page with one ip. Proxies are a must basically.
+* `scrape_linkedin_job(...)` is separate from LinkedIn search and is intended for authenticated `jobs/view/...` pages.
 
 ## Frequently Asked Questions
 
@@ -209,6 +297,11 @@ This searches the description/title and must include software, summer, 2025, one
 
 - Wait some time between scrapes (site-dependent).
 - Try using the proxies param to change your IP address.
+
+---
+
+**Q: Why do I need a browser profile for `scrape_linkedin_job(...)`?**  
+**A:** LinkedIn often gates the full `jobs/view/...` page behind a signed-in experience. The single-job scraper uses a persistent authenticated Playwright profile so it can access the same page state you see in your browser.
 
 ---
 

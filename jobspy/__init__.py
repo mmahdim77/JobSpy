@@ -11,6 +11,7 @@ from jobspy.glassdoor import Glassdoor
 from jobspy.google import Google
 from jobspy.indeed import Indeed
 from jobspy.linkedin import LinkedIn
+from jobspy.linkedin_detail import scrape_linkedin_job
 from jobspy.naukri import Naukri
 from jobspy.model import JobType, Location, JobResponse, Country
 from jobspy.model import SalarySource, ScraperInput, Site
@@ -221,7 +222,7 @@ def scrape_jobs(
         return pd.DataFrame()
 
 
-# Add BDJobs to __all__
 __all__ = [
-    "BDJobs",
+    "scrape_jobs",
+    "scrape_linkedin_job",
 ]

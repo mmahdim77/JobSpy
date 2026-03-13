@@ -284,6 +284,28 @@ class JobResponse(BaseModel):
     jobs: list[JobPost] = []
 
 
+class LinkedInJobDetail(BaseModel):
+    job_id: str
+    job_url: str
+    title: str | None = None
+    company_name: str | None = None
+    company_url: str | None = None
+    location: str | None = None
+    posted_time: str | None = None
+    applicants: str | None = None
+    description_text: str | None = None
+    description_html: str | None = None
+    criteria: dict[str, str] = {}
+    skills: list[str] = []
+    benefits: list[str] = []
+    metadata_text: str | None = None
+    apply_linkedin_url: str | None = None
+    apply_direct_url: str | None = None
+    easy_apply: bool = False
+    apply_button_text: str | None = None
+    apply_method: str | None = None
+
+
 class Site(Enum):
     LINKEDIN = "linkedin"
     INDEED = "indeed"
