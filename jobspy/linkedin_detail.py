@@ -144,23 +144,13 @@ def _detect_login_wall(page) -> bool:
 
 def _wait_for_job_page(page) -> None:
     page.wait_for_load_state("domcontentloaded", timeout=45_000)
-
-    stable_selectors = [
-        "h1.t-24",
-        ".job-details-jobs-unified-top-card__job-title",
-        ".jobs-unified-top-card",
-        ".jobs-search__job-details--container",
-        ".jobs-description",
-        ".scaffold-layout__detail",
-        "main",
-    ]
-    for selector in stable_selectors:
+    for selector in ["main", "body"]:
         try:
-            page.locator(selector).first.wait_for(state="visible", timeout=8_000)
+            page.locator(selector).first.wait_for(state="visible", timeout=5_000)
             return
         except Exception:
             continue
-    page.wait_for_timeout(3_000)
+    page.wait_for_timeout(1_500)
 
 
 def _maybe_expand_description(page) -> None:
@@ -297,26 +287,15 @@ def _extract_apply_links(page) -> dict[str, str | None]:
 def _extract_easy_apply(page) -> dict[str, Any]:
     easy_apply_present = False
     apply_button_text = None
-    for candidate in _top_action_candidates(page):
-        text = candidate["text"]
-        lowered = text.lower()
-        if lowered == "save":
-            continue
-        if "easy apply" in lowered:
-            easy_apply_present = True
-            apply_button_text = text
-            break
-        if lowered == "apply":
-            apply_button_text = text
-            break
+    top_lines = _header_lines(page)
+    header_text = " ".join(top_lines)
+    normalized = header_text.lower()
 
-    if not apply_button_text:
-        top_lines = _header_lines(page)
-        if "Easy Apply" in top_lines:
-            easy_apply_present = True
-            apply_button_text = "Easy Apply"
-        elif "Apply" in top_lines:
-            apply_button_text = "Apply"
+    if "easy apply" in normalized:
+        easy_apply_present = True
+        apply_button_text = "Easy Apply"
+    elif "apply" in normalized:
+        apply_button_text = "Apply"
 
     return {
         "easy_apply": easy_apply_present,
@@ -472,10 +451,7 @@ def scrape_linkedin_job(
                 page,
                 [".job-details-benefits__list-item", ".jobs-benefits__list-item"],
             )
-            canonical_url = (
-                _locator_attr(page.locator("link[rel='canonical']").first, "href")
-                or page.url
-            )
+            canonical_url = page.url
 
             fallback = _fallback_extract_from_main(page)
             apply_links = _extract_apply_links(page)
